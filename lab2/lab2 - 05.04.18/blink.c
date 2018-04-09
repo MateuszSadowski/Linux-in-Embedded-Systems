@@ -9,108 +9,64 @@
 //                      perror(source),kill(0,SIGKILL),\
 //                      exit(EXIT_FAILURE))
 
-//#define GPIO17 0
+enum Direction { Left = 0, Right = 1};
 
-void gainFullControl(int);
+#define BLUE_LED 17
+#define WHITE_LED 18
+#define GREEN_LED 23
+#define RED_LED 24
+#define BUTTON_1 27
+#define BUTTON_2 22
+#define BUTTON_3 10
+
+void turnSignal(Direction);
 
 int main(int argc, char* argv[])
 {
-    int i;
-	int fd;
-	int ret;
-	struct pollfd pfd;
-	char c;
-
-    //gainFullControl(0);
-
-    if(wiringPiSetup() == -1)
+    if(wiringPiSetupSys() == -1)
     {
-        //ERR("wirintPiSetup")
-        exit(1);
-    }
-
-    //pinMode(0, OUTPUT);
-
-
-	//Enable gpio25
-	fd = open("/sys/class/gpio/export", O_WRONLY);
-	write(fd, "22", 2);
-	close(fd);
-
-	//Set gpio25 as input
-	fd = open("/sys/class/gpio/gpio22/direction", O_WRONLY);
-	write(fd, "in", 2);
-	close(fd);
-
-	//Set gpio25 interrupt
-	fd = open("/sys/class/gpio/gpio22/edge", O_WRONLY);
-	write(fd, "falling", 7);
-	//write(fd, "both", 4);
-	close(fd);
-
-	//Wait for event, repeat 10 times
-	fd = open("/sys/class/gpio/gpio22/value", O_RDONLY);
-	pfd.fd = fd;
-	pfd.events = POLLPRI;
-	for(i = 1; i <= 10; i++){
-		lseek(fd, 0, SEEK_SET);
-		ret = poll(&pfd, 1, 3000);
-		read(fd, &c, 1);
-		printf("%d: ", i);
-		if(ret == 0)
-			printf("Timeout\n");
-		else
-			if(c == '0')
-				printf("Push\n");
-			else
-				printf("Release\n", i, c);
+		//ERR("wiringPiSetup");
+		exit(1);
 	}
-	close(fd);
+	
+	//TODO: Is it necessary to set up mode for all pins again??
 
-    // while(1)
-    // {
-    //     digitalWrite (GPIO17, HIGH); delay (500);
-    //     digitalWrite (GPIO17, LOW); delay (500); 
-    // }
 
-    //Disable gpio25
-	fd = open("/sys/class/gpio/unexport", O_WRONLY);
-	write(fd, "22", 1);
-	close(fd);
+
 
     return 0;
 }
 
-void gainFullControl(int pin)
+void turnSignal(Direction direction)
 {
-    // int fd;
-    // char buffer [33];
-    // //Enable gpio17
-    // itoa (pin,buffer,10)
-	// fd = open("/sys/class/gpio/export", O_WRONLY);
-	// write(fd, buffer, 1);
-	// close(fd);
+	while(true)		//TODO: Make it be interruptable by button press
+	{
+		if(direction == Direction.Left)
+		{
+			digitalWrite(BLUE_LED, 1);
+			delay(500);
+			digitalWrite(WHITE_LED, 1);
+			delay(500);
+			digitalWrite(GREEN_LED, 1);
+			delay(500);
+			digitalWrite(RED_LED, 1);
+			delay(500);
+		}
+		else
+		{
+			digitalWrite(RED_LED, 1);
+			delay(500);
+			digitalWrite(GREEN_LED, 1);
+			delay(500);
+			digitalWrite(WHITE_LED, 1);
+			delay(500);
+			digitalWrite(BLUE_LED, 1);
+			delay(500);
+		}
 
-	// //Set gpio17 as output
-    // char* path;
-    // if(sprintf(path, "/sys/class/gpio/gpio%d/direction", pin) < 1)
-    // {
-    //     ERR("sprintf");
-    // }
-	// fd = open(path, O_WRONLY);
-	// write(fd, "out", 3);
-    // close(fd);
-
-    // //Set gpio25 interrupt
-	// fd = open("/sys/class/gpio/gpio25/edge", O_WRONLY);
-	// //write(fd, "falling", 7);
-	// write(fd, "both", 4);
-	// close(fd
-    char* command;
-    if(sprintf(command, "echo %d > /sys/class/gpio/export; echo out > /sys/class/gpio/gpio%d/direction", pin) < 1)
-    {
-        //ERR("sprintf");
-        exit(1);
-    }
-    system(command);
+		digitalWrite(BLUE_LED, 0);
+		digitalWrite(WHITE_LED, 0);
+		digitalWrite(GREEN_LED, 0);
+		digitalWrite(RED_LED, 0);
+	}
 }
