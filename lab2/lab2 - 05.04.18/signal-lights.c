@@ -20,9 +20,11 @@ enum Direction { Left = 0, Right = 1};
 #define BUTTON_3 10
 
 void turnSignal(Direction);
+void hazardLights();
 
 int main(int argc, char* argv[])
 {
+	//Setup pins with BCM-GPIO pin numbering
     if(wiringPiSetupSys() == -1)
     {
 		//ERR("wiringPiSetup");
@@ -31,8 +33,10 @@ int main(int argc, char* argv[])
 	
 	//TODO: Is it necessary to set up mode for all pins again??
 
-
-
+	//Register handlers for interrupts on buttons
+	wiringPiISR(BUTTON_1, INT_EDGE_BOTH, &turnSignal(Direction.Left));
+	wiringPiISR(BUTTON_2, INT_EDGE_BOTH, &turnSignal(Direction.Right));
+	wiringPiISR(BUTTON_3, INT_EDGE_BOTH, &turnSignal(Direction.hazardLights));
 
     return 0;
 }
@@ -64,6 +68,22 @@ void turnSignal(Direction direction)
 			delay(500);
 		}
 
+		digitalWrite(BLUE_LED, 0);
+		digitalWrite(WHITE_LED, 0);
+		digitalWrite(GREEN_LED, 0);
+		digitalWrite(RED_LED, 0);
+	}
+}
+
+void hazardLights()
+{
+	while(true)		//TODO: Make it be interruptable by button press
+	{
+		digitalWrite(BLUE_LED, 1);
+		digitalWrite(WHITE_LED, 1);
+		digitalWrite(GREEN_LED, 1);
+		digitalWrite(RED_LED, 1);
+		delay(800);
 		digitalWrite(BLUE_LED, 0);
 		digitalWrite(WHITE_LED, 0);
 		digitalWrite(GREEN_LED, 0);

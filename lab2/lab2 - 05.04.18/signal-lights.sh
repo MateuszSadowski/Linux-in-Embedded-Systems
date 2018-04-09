@@ -20,3 +20,6 @@ gpio -g export 10 in
 gpio -g edge 27 both
 gpio -g edge 22 both
 gpio -g edge 10 both
+
+# Run program
+./blink
