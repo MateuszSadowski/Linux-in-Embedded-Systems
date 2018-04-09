@@ -20,11 +20,22 @@
 #define BUTTON_3 10
 
 //void turnSignal(Direction);
+void setup();
 void turnSignal(int pin);
 void hazardLights(int pin);
 void deBounce(int pin);
 
 int main(int argc, char* argv[])
+{
+	setup();
+	while(1)
+	{
+		//TODO: What to do here??
+	}
+    return 0;
+}
+
+void setup()
 {
 	//Setup pins with BCM-GPIO pin numbering
     if(-1 == wiringPiSetupSys())
@@ -42,8 +53,6 @@ int main(int argc, char* argv[])
 	wiringPiISR(BUTTON_1, INT_EDGE_BOTH, &turnSignal(BUTTON_1));
 	wiringPiISR(BUTTON_2, INT_EDGE_BOTH, &turnSignal(BUTTON_2));
 	wiringPiISR(BUTTON_3, INT_EDGE_BOTH, &hazardLights(BUTTON_3));
-
-    return 0;
 }
 
 void turnSignal(int pin)
@@ -54,6 +63,7 @@ void turnSignal(int pin)
 	{
 		if(pin == BUTTON_1)
 		{
+			printf("SIGNAL LEFT\n");
 			digitalWrite(BLUE_LED, 1);
 			delay(500);
 			digitalWrite(WHITE_LED, 1);
@@ -65,6 +75,7 @@ void turnSignal(int pin)
 		}
 		else
 		{
+			printf("SIGNAL RIGHT\n");
 			digitalWrite(RED_LED, 1);
 			delay(500);
 			digitalWrite(GREEN_LED, 1);
@@ -85,6 +96,8 @@ void turnSignal(int pin)
 void hazardLights(int pin)
 {
 	deBounce(pin);
+	
+	printf("STARTED HAZARD LIGHTS\n");
 
 	while(true)		//TODO: Make it be interruptable by button press
 	{
@@ -102,12 +115,14 @@ void hazardLights(int pin)
 
 void deBounce(int pin)
 {
-	int result;
+	int result, i = 0;
 	while(0 != (result = waitForInterrupt(pin, 100)))		//TODO: Choose best time period
 	{
+		printf("Debouncing for %d time...\n", i++);
 		if(-1 == result)
 		{
 			exit(1);
 		}
 	}
+	printf("Debouncing timed out. Proceeding with state read...\n");
 }
