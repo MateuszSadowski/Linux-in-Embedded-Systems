@@ -22,4 +22,4 @@ gpio -g edge 22 both
 gpio -g edge 10 both
 
 # Run program
-./blink
+./signal-lights
