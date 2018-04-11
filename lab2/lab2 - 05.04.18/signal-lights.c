@@ -19,18 +19,28 @@
 #define BUTTON_2 22
 #define BUTTON_3 10
 
-//void turnSignal(Direction);
+#define MAIN_DELAY 100
+#define SIGNAL_DELAY 500
+#define HAZARD_DELAY 800
+
+#define DEBOUNCING_TIMEOUT 100
+
+static volatile int isLeftSignalOn = 0;
+static volatile int isRightSignalOn = 0;
+static volatile int isHazardLightsOn = 0;
+
+//void signalTurn(Direction);
 void setup();
-void turnSignal(int pin);
-void hazardLights(int pin);
+void signalTurn(int pin);
+void signalHazard(int pin);
 void deBounce(int pin);
 
 int main(int argc, char* argv[])
 {
 	setup();
-	while(1)
+	while(true)
 	{
-		//TODO: What to do here??
+		delay(MAIN_DELAY);
 	}
     return 0;
 }
@@ -47,43 +57,52 @@ void setup()
 	//TODO: Is it necessary to set up mode for all pins again??
 
 	//Register handlers for interrupts on buttons
-	// wiringPiISR(BUTTON_1, INT_EDGE_BOTH, &turnSignal(Direction.Left));
-	// wiringPiISR(BUTTON_2, INT_EDGE_BOTH, &turnSignal(Direction.Right));
-	// wiringPiISR(BUTTON_3, INT_EDGE_BOTH, &turnSignal(Direction.hazardLights));
-	wiringPiISR(BUTTON_1, INT_EDGE_BOTH, &turnSignal(BUTTON_1));
-	wiringPiISR(BUTTON_2, INT_EDGE_BOTH, &turnSignal(BUTTON_2));
-	wiringPiISR(BUTTON_3, INT_EDGE_BOTH, &hazardLights(BUTTON_3));
+	// wiringPiISR(BUTTON_1, INT_EDGE_BOTH, &signalTurn(Direction.Left));
+	// wiringPiISR(BUTTON_2, INT_EDGE_BOTH, &signalTurn(Direction.Right));
+	// wiringPiISR(BUTTON_3, INT_EDGE_BOTH, &signalTurn(Direction.signalHazard));
+	if(-1 == wiringPiISR(BUTTON_1, INT_EDGE_BOTH, &signalTurn(BUTTON_1)))
+	{
+		exit(1);
+	}
+	if(-1 == wiringPiISR(BUTTON_2, INT_EDGE_BOTH, &signalTurn(BUTTON_2)))
+	{
+		exit(1);
+	}
+	if(-1 == wiringPiISR(BUTTON_3, INT_EDGE_BOTH, &signalHazard(BUTTON_3))
+	{
+		exit(1);
+	}
 }
 
-void turnSignal(int pin)
+void signalTurn(int pin)
 {
 	deBounce(pin);
 
-	while(true)		//TODO: Make it be interruptable by button press
+	while(true)
 	{
 		if(pin == BUTTON_1)
 		{
 			printf("SIGNAL LEFT\n");
 			digitalWrite(BLUE_LED, 1);
-			delay(500);
+			delay(SIGNAL_DELAY);
 			digitalWrite(WHITE_LED, 1);
-			delay(500);
+			delay(SIGNAL_DELAY);
 			digitalWrite(GREEN_LED, 1);
-			delay(500);
+			delay(SIGNAL_DELAY);
 			digitalWrite(RED_LED, 1);
-			delay(500);
+			delay(SIGNAL_DELAY);
 		}
 		else
 		{
 			printf("SIGNAL RIGHT\n");
 			digitalWrite(RED_LED, 1);
-			delay(500);
+			delay(SIGNAL_DELAY);
 			digitalWrite(GREEN_LED, 1);
-			delay(500);
+			delay(SIGNAL_DELAY);
 			digitalWrite(WHITE_LED, 1);
-			delay(500);
+			delay(SIGNAL_DELAY);
 			digitalWrite(BLUE_LED, 1);
-			delay(500);
+			delay(SIGNAL_DELAY);
 		}
 
 		digitalWrite(BLUE_LED, 0);
@@ -93,19 +112,19 @@ void turnSignal(int pin)
 	}
 }
 
-void hazardLights(int pin)
+void signalHazard(int pin)
 {
 	deBounce(pin);
 	
 	printf("STARTED HAZARD LIGHTS\n");
 
-	while(true)		//TODO: Make it be interruptable by button press
+	while(true)
 	{
 		digitalWrite(BLUE_LED, 1);
 		digitalWrite(WHITE_LED, 1);
 		digitalWrite(GREEN_LED, 1);
 		digitalWrite(RED_LED, 1);
-		delay(800);
+		delay(HAZARD_DELAY);
 		digitalWrite(BLUE_LED, 0);
 		digitalWrite(WHITE_LED, 0);
 		digitalWrite(GREEN_LED, 0);
@@ -116,7 +135,7 @@ void hazardLights(int pin)
 void deBounce(int pin)
 {
 	int result, i = 0;
-	while(0 != (result = waitForInterrupt(pin, 100)))		//TODO: Choose best time period
+	while(0 != (result = waitForInterrupt(pin, DEBOUNCING_TIMEOUT)))		//TODO: Choose best time period
 	{
 		printf("Debouncing for %d time...\n", i++);
 		if(-1 == result)
