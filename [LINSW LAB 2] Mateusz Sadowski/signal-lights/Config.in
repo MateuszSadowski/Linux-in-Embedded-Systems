@@ -1,0 +1,5 @@
+config BR2_PACKAGE_SIGNAL-LIGHTS
+ 	bool "signal-ligts"
+	depends on BR2_PACKAGE_WIRINGPI
+	help
+	  Simple application controlling signal and hazard lights.

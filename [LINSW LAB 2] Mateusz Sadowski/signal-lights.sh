@@ -6,20 +6,20 @@ export WIRINGPI_CODES=1
 # Make GPIO available for regular user
 # -g option enables BCM-GPIO pin numbering
 # Export LEDs as output
-gpio -g export 17 out
-gpio -g export 18 out
-gpio -g export 23 out
-gpio -g export 24 out
+gpio export 17 out
+gpio export 18 out
+gpio export 23 out
+gpio export 24 out
 
 # Export buttons as input
-gpio -g export 27 in
-gpio -g export 22 in
-gpio -g export 10 in
+gpio export 27 in
+gpio export 22 in
+gpio export 10 in
 
 # Enable button pins for edge interrupt triggering on both
-gpio -g edge 27 both
-gpio -g edge 22 both
-gpio -g edge 10 both
+gpio edge 27 both
+gpio edge 22 both
+gpio edge 10 both
 
 # Run program
 ./signal-lights
