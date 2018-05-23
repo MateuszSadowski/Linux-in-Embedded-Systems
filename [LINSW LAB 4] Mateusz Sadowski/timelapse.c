@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <semaphore.h>
+#include <string.h>
 
 #define BLUE_LED 17
 #define WHITE_LED 18
@@ -51,6 +52,9 @@ int main(int argc, char* argv[])
 		captureDelay = atoi(argv[1]);
     }
 
+	toggleCapture();
+	// toggleCapture();
+	// toggleCapture();
 	// FILE* config;
 	// if(NULL == (config = fopen (CONFIGURATION_FILE , "r+")))
 	// {
@@ -105,15 +109,20 @@ void toggleCapture()
 		exit(EXIT_FAILURE);
     }
 
-    if(1 == scanAndUpdateConfiguration)
+	char buf[10];
+    if(1 == scanAndUpdateConfiguration(config))
 	{
 		isCapturing = 0;
-		fputs("0", config);
+		sprintf(buf, "%d", 0);
+		fseek(config, 0, SEEK_SET);
+		fwrite(buf, strlen(buf), 1, config);
 	}
 	else
 	{
 		isCapturing = 1;
-		fputs("1", config);
+		sprintf(buf, "%d", 1);
+		fseek(config, 0, SEEK_SET);
+		fwrite(buf, strlen(buf), 1, config);
 	}
 
 	if(EOF == fclose(config))
