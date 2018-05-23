@@ -1,0 +1,20 @@
+fdt addr ${fdt_addr}
+fdt get value orig_bootargs /chosen bootargs
+echo $orig_bootargs
+gpio set 18
+sleep 3
+if gpio input 27 ; then
+ gpio set 24
+ gpio clear 18
+ fatload mmc 0:1 ${kernel_addr_r} zImage_administrator
+ load mmc 0:1 ${fdt_addr_r} bcm2708-rpi-b.dtb
+ setenv bootargs "${bootargs_orig} console=ttyAMA0"
+ bootz ${kernel_addr_r} - ${fdt_addr_r}
+else
+ gpio set 23
+ gpio clear 18
+ fatload mmc 0:1 ${kernel_addr_r} zImage_user
+ load mmc 0:1 ${fdt_addr_r} bcm2708-rpi-b.dtb
+ setenv bootargs "${bootargs_orig} console=ttyAMA0 root=/dev/mmcblk0p2 rootwait"
+ bootz ${kernel_addr_r} - ${fdt_addr_r}
+fi
