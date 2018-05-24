@@ -1,4 +1,4 @@
-//#include <wiringPi.h>
+#include <wiringPi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -6,6 +6,7 @@
 #include <semaphore.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #define BLUE_LED 17
 #define WHITE_LED 18
@@ -17,17 +18,15 @@
 
 #define DEBOUNCING_TIMEOUT 100
 #define DELAY_TIMEOUT 1
+#define FLASHLED_TIME 500000000L
 
 #define CAPTUREDELAY_MINVALUE 1
 #define CAPTUREDELAY_MAXVALUE 86400
 
 #define CONFIGURATION_FILE "config.txt"
 
-//static volatile int isCapturing = 1;
 static volatile int captureDelay = 1;
 static volatile char* saveLocation;
-
-//static sem_t sem;
 
 void usage(char* programName);
 void setup();
@@ -38,7 +37,8 @@ FILE* openConfig();
 void closeConfig(FILE* config);
 int checkIsCapturing(FILE* fp);
 void setIsCapturing(FILE* fp, int isCapturing);
-
+void deBounce(int pin);
+void deBounceButton();
 
 int main(int argc, char* argv[])
 {
@@ -50,24 +50,16 @@ int main(int argc, char* argv[])
 
     if(2 == argc)
     {
-        // char* errStr;
-        // if(0 == (captureDelay = (int)strtonum(argv[1], CAPTUREDELAY_MINVALUE, CAPTUREDELAY_MAXVALUE, *errStr)))
-        // {
-        //     fprintf(stderr, "%s", errStr);
-        //     exit(EXIT_FAILURE);
-        // }
 		captureDelay = atoi(argv[1]);
     }
-	//setup();
 
-	// printf("Starting to capture every %d seconds...\n", captureDelay);
+	setup();
+
 	while(1)
 	{
-		printf("Waiting to capture...\n");
+		printf("Starting to capture every %d seconds...\n", captureDelay);
 		capture();
-		printf("Left capture...\n");
 		sleep(DELAY_TIMEOUT);
-		printf("Left sleep...\n");
 	}
 	
     return EXIT_SUCCESS;
@@ -79,28 +71,31 @@ void usage(char *programName)
 	fprintf(stderr, "t - number of seconds to elapse between each capture");
 }
 
-// void setup()
-// {
-// 	//Setup pins with BCM-GPIO pin numbering
-//     if(-1 == wiringPiSetupSys())
-//     {
-// 		perror("wiringPiSetupSys");
-// 		exit(EXIT_FAILURE);
-// 	}
+void setup()
+{
+	//Setup pins with BCM-GPIO pin numbering
+    if(-1 == wiringPiSetupSys())
+    {
+		perror("wiringPiSetupSys");
+		exit(EXIT_FAILURE);
+	}
 
-// 	//Register handlers for interrupts on buttons
-// 	if(-1 == wiringPiISR(BUTTON_1, INT_EDGE_BOTH, &toggleCapture))
-// 	{
-// 		perror("wiringPiISR");
-// 		exit(EXIT_FAILURE);
-// 	}
+	//Register handlers for interrupts on buttons
+	if(-1 == wiringPiISR(BUTTON_1, INT_EDGE_BOTH, &toggleCapture))
+	{
+		perror("wiringPiISR");
+		exit(EXIT_FAILURE);
+	}
 	
-// 	//Reset RED LED on start
-// 	digitalWrite(RED_LED, 0);
-// }
+	//Reset RED LED on start
+	digitalWrite(RED_LED, 0);
+}
 
 void toggleCapture()
 {
+	if(0 == deBounceButton())
+		return;
+
 	FILE* config = openConfig();
 
     if(1 == checkIsCapturing(config))
@@ -115,31 +110,26 @@ void toggleCapture()
 	closeConfig(config);
 }
 
+int deBounceButton()
+{
+	deBounce(BUTTON_3);
+	//Safe to read state
+	int state = digitalRead(BUTTON_3);
+	
+	if(state == 1)
+	{
+		return 0;
+	}
+
+	return 1;
+}
+
 void scanAndUpdateCaptureDelay(FILE* fp)
 {
-	//char* errStr;
 	char buff[255];
 	fscanf(fp, "%s", buff);
-	// // i = (int)strtonum(buff, 0, 1, *errStr);
-	// // if(0 == i && errStr != NULL)
-	// // {
-	// // 	fprintf(stderr, "%s", errStr);
-	// // 	exit(EXIT_FAILURE);
-	// // }
-	// i = atoi(buff);
-	// printf("str: %s, i: %d\n", buff, i);
 	fscanf(fp, "%s", buff);
-	// if(0 == (captureDelay = (int)strtonum(buff, CAPTUREDELAY_MINVALUE, CAPTUREDELAY_MAXVALUE, *errStr)))
-	// {
-	// 	fprintf(stderr, "%s", errStr);
-	// 	exit(EXIT_FAILURE);
-	// }
 	captureDelay = atoi(buff);
-	// printf("str: %s, i: %d\n", buff, captureDelay);
-	// fscanf(fp, "%s", buff);
-	// saveLocation = buff;
-	// printf("str: %s, i: %s\n", buff, saveLocation);
-	// return i;
 }
 
 FILE* openConfig()
@@ -182,10 +172,40 @@ void capture()
 	scanAndUpdateCaptureDelay(config);
 	while(1 == checkIsCapturing(config))
 	{
-		printf("Captured a photo. Timeout: %d\n", captureDelay);
-		//code here
+		//printf("Captured a photo. Timeout: %d\n", captureDelay);
+		system("./webcam.sh");
+		flashLED();
 		sleep(captureDelay);
-		printf("Slept designated time.\n");
 	}
 	closeConfig(config);
+}
+
+void deBounce(int pin)
+{
+	int result, i = 0;
+	while(0 != (result = waitForInterrupt(pin, DEBOUNCING_TIMEOUT)))
+	{	//result == 1 -> successful interrupt event
+		//printf("Debouncing for %d time...\n", i++);
+		if(-1 == result)
+		{
+			exit(EXIT_FAILURE);
+		}
+	}
+	//printf("Debouncing timed out. Proceeding with state read...\n");
+}
+
+void flashLED()
+{
+	struct timespec tim;
+   	tim.tv_sec = 0;
+   	tim.tv_nsec = FLASHLED_TIME;
+	digitalWrite(RED_LED, 1);
+
+	if(nanosleep(&tim , NULL) < 0 )   
+	{
+		printf("Nano sleep system call failed \n");
+		return;
+	}
+
+	digitalWrite(RED_LED, 0);
 }
