@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <semaphore.h>
 #include <string.h>
+#include <unistd.h>
 
 #define BLUE_LED 17
 #define WHITE_LED 18
@@ -15,13 +16,14 @@
 #define BUTTON_3 27
 
 #define DEBOUNCING_TIMEOUT 100
+#define DELAY_TIMEOUT 1
 
 #define CAPTUREDELAY_MINVALUE 1
 #define CAPTUREDELAY_MAXVALUE 86400
 
 #define CONFIGURATION_FILE "config.txt"
 
-static volatile int isCapturing = 1;
+//static volatile int isCapturing = 1;
 static volatile int captureDelay = 1;
 static volatile char* saveLocation;
 
@@ -31,7 +33,12 @@ void usage(char* programName);
 void setup();
 void toggleCapture();
 void capture();
-int scanAndUpdateConfiguration(FILE* fp);
+void scanAndUpdateCaptureDelay(FILE* fp);
+FILE* openConfig();
+void closeConfig(FILE* config);
+int checkIsCapturing(FILE* fp);
+void setIsCapturing(FILE* fp, int isCapturing);
+
 
 int main(int argc, char* argv[])
 {
@@ -51,25 +58,17 @@ int main(int argc, char* argv[])
         // }
 		captureDelay = atoi(argv[1]);
     }
-
-	toggleCapture();
-	// toggleCapture();
-	// toggleCapture();
-	// FILE* config;
-	// if(NULL == (config = fopen (CONFIGURATION_FILE , "r+")))
-	// {
-	// 	fprintf(stderr, "Error opening file.\n");
-	// 	exit(EXIT_FAILURE);
-    // }
-	// scanAndUpdateConfiguration(config);
-
 	//setup();
 
 	// printf("Starting to capture every %d seconds...\n", captureDelay);
-	// while(1)
-	// {
-
-	// }
+	while(1)
+	{
+		printf("Waiting to capture...\n");
+		capture();
+		printf("Left capture...\n");
+		sleep(DELAY_TIMEOUT);
+		printf("Left sleep...\n");
+	}
 	
     return EXIT_SUCCESS;
 }
@@ -102,47 +101,33 @@ void usage(char *programName)
 
 void toggleCapture()
 {
-	FILE* config;
-	if(NULL == (config = fopen (CONFIGURATION_FILE , "r+")))
-	{
-		fprintf(stderr, "Error opening file.\n");
-		exit(EXIT_FAILURE);
-    }
+	FILE* config = openConfig();
 
-	char buf[10];
-    if(1 == scanAndUpdateConfiguration(config))
+    if(1 == checkIsCapturing(config))
 	{
-		isCapturing = 0;
-		sprintf(buf, "%d", 0);
-		fseek(config, 0, SEEK_SET);
-		fwrite(buf, strlen(buf), 1, config);
+		setIsCapturing(config, 0);
 	}
 	else
 	{
-		isCapturing = 1;
-		sprintf(buf, "%d", 1);
-		fseek(config, 0, SEEK_SET);
-		fwrite(buf, strlen(buf), 1, config);
+		setIsCapturing(config, 1);
 	}
 
-	if(EOF == fclose(config))
-		fprintf(stderr, "Error closing file.\n");
+	closeConfig(config);
 }
 
-int scanAndUpdateConfiguration(FILE* fp)
+void scanAndUpdateCaptureDelay(FILE* fp)
 {
-	char* errStr;
+	//char* errStr;
 	char buff[255];
-	int i;
 	fscanf(fp, "%s", buff);
-	// i = (int)strtonum(buff, 0, 1, *errStr);
-	// if(0 == i && errStr != NULL)
-	// {
-	// 	fprintf(stderr, "%s", errStr);
-	// 	exit(EXIT_FAILURE);
-	// }
-	i = atoi(buff);
-	printf("str: %s, i: %d\n", buff, i);
+	// // i = (int)strtonum(buff, 0, 1, *errStr);
+	// // if(0 == i && errStr != NULL)
+	// // {
+	// // 	fprintf(stderr, "%s", errStr);
+	// // 	exit(EXIT_FAILURE);
+	// // }
+	// i = atoi(buff);
+	// printf("str: %s, i: %d\n", buff, i);
 	fscanf(fp, "%s", buff);
 	// if(0 == (captureDelay = (int)strtonum(buff, CAPTUREDELAY_MINVALUE, CAPTUREDELAY_MAXVALUE, *errStr)))
 	// {
@@ -150,19 +135,57 @@ int scanAndUpdateConfiguration(FILE* fp)
 	// 	exit(EXIT_FAILURE);
 	// }
 	captureDelay = atoi(buff);
-	printf("str: %s, i: %d\n", buff, captureDelay);
-	fscanf(fp, "%s", buff);
-	saveLocation = buff;
-	printf("str: %s, i: %s\n", buff, saveLocation);
-	return i;
+	// printf("str: %s, i: %d\n", buff, captureDelay);
+	// fscanf(fp, "%s", buff);
+	// saveLocation = buff;
+	// printf("str: %s, i: %s\n", buff, saveLocation);
+	// return i;
 }
 
-// void capture()
-// {
-// 	while(isCapturing)
-// 	{
-// 		printf("Captured a photo.\n");
-// 		//code here
-// 		delay(captureDelay);
-// 	}
-// }
+FILE* openConfig()
+{
+	FILE* config;
+	if(NULL == (config = fopen (CONFIGURATION_FILE , "r+")))
+	{
+		fprintf(stderr, "Error opening file.\n");
+		exit(EXIT_FAILURE);
+    }
+
+	return config;
+}
+
+void closeConfig(FILE* config)
+{
+	if(EOF == fclose(config))
+		fprintf(stderr, "Error closing file.\n");
+}
+
+int checkIsCapturing(FILE* fp)
+{
+	fseek(fp, 0, SEEK_SET);
+	char buff[255];
+	fscanf(fp, "%s", buff);
+	return atoi(buff);
+}
+
+void setIsCapturing(FILE* fp, int isCapturing)
+{
+	char buf[10];
+	sprintf(buf, "%d", isCapturing);
+	fseek(fp, 0, SEEK_SET);
+	fwrite(buf, strlen(buf), 1, fp);
+}
+
+void capture()
+{
+	FILE* config = openConfig();
+	scanAndUpdateCaptureDelay(config);
+	while(1 == checkIsCapturing(config))
+	{
+		printf("Captured a photo. Timeout: %d\n", captureDelay);
+		//code here
+		sleep(captureDelay);
+		printf("Slept designated time.\n");
+	}
+	closeConfig(config);
+}
