@@ -1,0 +1,54 @@
+#page_wrap
+{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#form_wrap
+{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#webcam_status
+{
+    display: flex;
+}
+
+.control
+{
+    display: flex;
+    align-items: center;
+}
+
+.control_item_radio
+{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-left: 20px;
+}
+
+#control_item_text_input
+{
+    margin-left: 10px;
+    width: 50px;
+}
+
+.button_submit
+{
+    width: 100px;
+    height: 40px;
+}
+
+.button_refresh
+{
+    margin-left: 10px
+}
+
+/* .radiobox_label
+{
+
+} */

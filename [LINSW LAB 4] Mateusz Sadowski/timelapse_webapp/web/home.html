@@ -1,0 +1,47 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Timelapse Webapp</title>
+    <link rel="stylesheet" href="/style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet">
+    <!-- <script src="bundle.js"></script> -->
+</head>
+
+<body>
+    <div id="page_wrap">
+        <div class="control">
+            <h1>Remote timelapse system</h1>
+            <button onclick="refresh()" class="button_refresh"><i class="material-icons">refresh</i></button>
+        </div>
+        <form action="/update" method="POST" id="form_wrap">
+            <div id="webcam_status">
+                <h2>Webcam is:</h2>
+                <div class="control">
+                    <div class="control_item_radio">
+                        <span class="radiobox_label">ON</span>
+                        <input id="radiobox_on" type="radio" name="status" value="1" />
+                    </div>
+                    <div class="control_item_radio">
+                        <span class="radiobox_label">OFF</span>
+                        <input id="radiobox_off" type="radio" name="status" value="0" />
+                    </div>
+                </div>
+            </div>
+            <div class="control">
+                <h2>Time interval:</h2>
+                <input type="text" name="time" id="control_item_text_input" />s
+            </div>
+            <input type="submit" value="Update" class="button_submit" />
+        </form>
+    </div>
+
+    <!-- <script src="/jquery/jquery.min.js"></script> -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
